@@ -1,0 +1,12 @@
+# Ignore everything
+*
+
+# But don't ignore directories (needed to look inside them for .R files)
+!*/
+
+# Don't ignore .R files
+!*.R
+!*.sh
+
+# Optional: Don't ignore the .gitignore file itself
+!.gitignore
