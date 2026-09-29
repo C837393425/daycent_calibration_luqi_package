@@ -568,7 +568,15 @@ calculate_variable_likelihood <- function(var_config, model_data, obs_data, task
     # Melt to long format for daily processing (NH3, Urea, etc.)
     # Use specific column name based on variable type for compatibility
     if (var_config$matching_type %in% c("individual_windows", "cumulative_windows")) {
-      value_name <- "mod_NH3"  # NH3 functions expect mod_NH3
+
+      if (var_config$model_output == "NH3.N") {
+        value_name <- "mod_NH3"   # N2O output column
+      } else if (var_config$model_output == "DayCent_N2O") {
+        value_name <- "mod_N2O"   # default to NH3 output column
+      } else {
+        stop("Unknown output for cumulative windows")
+      }
+      
     } else if (var_config$matching_type == "point_measurements") {
       value_name <- "mod_Urea"  # Urea functions expect mod_Urea
     } else {
@@ -714,6 +722,8 @@ match_cumulative_windows <- function(model_data, obs_data, var_config) {
   # The generic function creates consistent column names based on variable type
   if (var_config$model_output == "NH3.N") {
     mod_col_found <- "mod_NH3vol_gN_ha_day"
+  } else if (var_config$model_output == "DayCent_N2O")  {
+    mod_col_found <- "mod_N2O_gN_ha_day"
   } else {
     mod_col_found <- paste0("mod_", gsub("\\.", "_", var_config$model_output), "_avg")
   }
