@@ -450,6 +450,23 @@ generate_mc_draws <- function(prior, nsim, nboot, rseed, smethod, verbose = TRUE
   # Extract parameter matrix
   X <- as.data.frame(si_obj$X)
   names(X) <- prior$ParameterName
+  
+  
+  # Derive cRnon2o_3 and cRnon2o_4 if their source parameters are present
+  
+  if (all(c("cRnon2o_1", "cRnon2o_2") %in% names(X))) {
+    set.seed(rseed + 1)
+    min_non2o_ratio <- 0.285
+    a <- X$cRnon2o_1
+    b <- X$cRnon2o_2
+    max_non2o_ratio <- runif(nrow(X), min = 15, max = 30)
+    
+    X$cRnon2o_3 <- round((max_non2o_ratio - min_non2o_ratio) * pi /
+                           (atan(b * pi * (1 - a)) - atan(-a * b * pi)), 6)
+    X$cRnon2o_4 <- round(min_non2o_ratio - X$cRnon2o_3 * atan(-a * b * pi) / pi, 6)
+  }
+  
+  
 
   return(list(gsa_obj = si_obj, X = X))
 }
