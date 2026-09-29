@@ -73,112 +73,99 @@ calculate_gofs <- function(merged_data){
     
     ln_ind_sigma        = sqrt(mean(merged_data$ln_resi^2)) 
     ln_ind_logLkhood    = -n2 * log(ln_ind_sigma) - (1 / (2 * ln_ind_sigma^2)) * sum(merged_data$ln_resi^2)
+    
+    
+    #===========================================================================
+    # Initialise all mixed-model outputs as NA, so a model that is skipped
+    # (missing columns) or fails simply stays NA and the other model is unaffected
+    #===========================================================================
+    stat_rS  <- c("logLkhood", "sigma_site", "sigma_Resi", "AIC", "BIC", "DIC", "RMSE", "MAE")
+    stat_rSY <- c("logLkhood", "sigma_site", "sigma_siteyr", "sigma_Resi", "AIC", "BIC", "DIC", "RMSE", "MAE")
+    for (v in c(paste0(stat_rS,  "_rS"),  paste0("ln_", stat_rS,  "_rS"),
+                paste0(stat_rSY, "_rSY"), paste0("ln_", stat_rSY, "_rSY"))) {
+      assign(v, NA)
+    }
+    
         
     #===========================================================================
     # Calculate likelihood with random site/Season model (rSY = random Site/Season)
     # Protected with tryCatch to handle cases where nested random effects are not feasible
     #===========================================================================
-    rSY_success <- tryCatch({
-
-      #===========================================================================
-      # Calculate likelihood with random site model (rS = random Site)
-      lmerFit_rS          = lmer(resi ~ -1 + (1|siteID), data = merged_data)
-      varcor_rS           = VarCorr(lmerFit_rS)
-      sigmas_rS           = as.data.frame(varcor_rS)[,c(1,5)]
-      sigma_site_rS       = sigmas_rS[sigmas_rS$grp == "siteID", 2]
-      sigma_Resi_rS       = sigmas_rS[sigmas_rS$grp == "Residual", 2]
-      logLkhood_rS        = logLik(lmerFit_rS)
-      AIC_rS              = AIC(lmerFit_rS)
-      BIC_rS              = BIC(lmerFit_rS)
-      DIC_rS              = getDIC(lmerFit_rS)
-      RMSE_rS             = sqrt(mean(residuals(lmerFit_rS)^2))
-      MAE_rS              = mean(abs(residuals(lmerFit_rS)))
-      
-      ln_lmerFit_rS       = lmer(ln_resi ~ -1 + (1|siteID), data = merged_data)
-      ln_varcor_rS        = VarCorr(ln_lmerFit_rS)
-      ln_sigmas_rS        = as.data.frame(ln_varcor_rS)[,c(1,5)]
-      ln_sigma_site_rS    = ln_sigmas_rS[ln_sigmas_rS$grp == "siteID", 2]
-      ln_sigma_Resi_rS    = ln_sigmas_rS[ln_sigmas_rS$grp == "Residual", 2]
-      ln_logLkhood_rS     = logLik(ln_lmerFit_rS)
-      ln_AIC_rS           = AIC(ln_lmerFit_rS)
-      ln_BIC_rS           = BIC(ln_lmerFit_rS)
-      ln_DIC_rS           = getDIC(ln_lmerFit_rS)
-      ln_RMSE_rS          = sqrt(mean(residuals(ln_lmerFit_rS)^2))
-      ln_MAE_rS           = mean(abs(residuals(ln_lmerFit_rS)))
-
-      lmerFit_rSY          = lmer(resi ~ -1 + (1|siteID/SeasonID), data = merged_data)
-      varcor_rSY           = VarCorr(lmerFit_rSY)
-      sigmas_rSY           = as.data.frame(varcor_rSY)[,c(1,5)]
-      sigma_site_rSY       = sigmas_rSY[sigmas_rSY$grp == "siteID", 2]
-      sigma_siteyr_rSY     = sigmas_rSY[sigmas_rSY$grp == "SeasonID:siteID", 2]
-      sigma_Resi_rSY       = sigmas_rSY[sigmas_rSY$grp == "Residual", 2]
-      logLkhood_rSY        = logLik(lmerFit_rSY)
-      AIC_rSY              = AIC(lmerFit_rSY)
-      BIC_rSY              = BIC(lmerFit_rSY)
-      DIC_rSY              = getDIC(lmerFit_rSY)
-      RMSE_rSY             = sqrt(mean(residuals(lmerFit_rSY)^2))
-      MAE_rSY              = mean(abs(residuals(lmerFit_rSY)))
-
-      ln_lmerFit_rSY       = lmer(ln_resi ~ -1 + (1|siteID/SeasonID), data = merged_data)
-      ln_varcor_rSY        = VarCorr(ln_lmerFit_rSY)
-      ln_sigmas_rSY        = as.data.frame(ln_varcor_rSY)[,c(1,5)]
-      ln_sigma_site_rSY    = ln_sigmas_rSY[ln_sigmas_rSY$grp == "siteID", 2]
-      ln_sigma_siteyr_rSY  = ln_sigmas_rSY[ln_sigmas_rSY$grp == "SeasonID:siteID", 2]
-      ln_sigma_Resi_rSY    = ln_sigmas_rSY[ln_sigmas_rSY$grp == "Residual", 2]
-      ln_logLkhood_rSY     = logLik(ln_lmerFit_rSY)
-      ln_AIC_rSY           = AIC(ln_lmerFit_rSY)
-      ln_BIC_rSY           = BIC(ln_lmerFit_rSY)
-      ln_DIC_rSY           = getDIC(ln_lmerFit_rSY)
-      ln_RMSE_rSY          = sqrt(mean(residuals(ln_lmerFit_rSY)^2))
-      ln_MAE_rSY           = mean(abs(residuals(ln_lmerFit_rSY)))
-
-      # Return TRUE if successful
-      TRUE
-    }, error = function(e) {
-      # Set all nested random effects values to NA when they fail
-      sigma_site_rS       <<- NA
-      sigma_siteyr_rS     <<- NA
-      sigma_Resi_rS       <<- NA
-      logLkhood_rS        <<- NA
-      AIC_rS              <<- NA
-      BIC_rS              <<- NA
-      DIC_rS              <<- NA
-      RMSE_rS             <<- NA
-      MAE_rS              <<- NA
-
-      ln_sigma_site_rS    <<- NA
-      ln_sigma_siteyr_rS  <<- NA
-      ln_sigma_Resi_rS    <<- NA
-      ln_logLkhood_rS     <<- NA
-      ln_AIC_rS           <<- NA
-      ln_BIC_rS           <<- NA
-      ln_DIC_rS           <<- NA
-      ln_RMSE_rS          <<- NA
-      ln_MAE_rS           <<- NA
-
-      sigma_site_rSY       <<- NA
-      sigma_siteyr_rSY     <<- NA
-      sigma_Resi_rSY       <<- NA
-      logLkhood_rSY        <<- NA
-      AIC_rSY              <<- NA
-      BIC_rSY              <<- NA
-      DIC_rSY              <<- NA
-      RMSE_rSY             <<- NA
-      MAE_rSY              <<- NA
-
-      ln_sigma_site_rSY    <<- NA
-      ln_sigma_siteyr_rSY  <<- NA
-      ln_sigma_Resi_rSY    <<- NA
-      ln_logLkhood_rSY     <<- NA
-      ln_AIC_rSY           <<- NA
-      ln_BIC_rSY           <<- NA
-      ln_DIC_rSY           <<- NA
-      ln_RMSE_rSY          <<- NA
-      ln_MAE_rSY           <<- NA
-
-      # Return FALSE if failed
-      FALSE
-    })
+    rS_success <- FALSE
+    if ("siteID" %in% names(merged_data)) {
+      rS_success <- tryCatch({
+        
+        lmerFit_rS          = lmer(resi ~ -1 + (1|siteID), data = merged_data)
+        varcor_rS           = VarCorr(lmerFit_rS)
+        sigmas_rS           = as.data.frame(varcor_rS)[,c(1,5)]
+        sigma_site_rS       = sigmas_rS[sigmas_rS$grp == "siteID", 2]
+        sigma_Resi_rS       = sigmas_rS[sigmas_rS$grp == "Residual", 2]
+        logLkhood_rS        = logLik(lmerFit_rS)
+        AIC_rS              = AIC(lmerFit_rS)
+        BIC_rS              = BIC(lmerFit_rS)
+        DIC_rS              = getDIC(lmerFit_rS)
+        RMSE_rS             = sqrt(mean(residuals(lmerFit_rS)^2))
+        MAE_rS              = mean(abs(residuals(lmerFit_rS)))
+        
+        ln_lmerFit_rS       = lmer(ln_resi ~ -1 + (1|siteID), data = merged_data)
+        ln_varcor_rS        = VarCorr(ln_lmerFit_rS)
+        ln_sigmas_rS        = as.data.frame(ln_varcor_rS)[,c(1,5)]
+        ln_sigma_site_rS    = ln_sigmas_rS[ln_sigmas_rS$grp == "siteID", 2]
+        ln_sigma_Resi_rS    = ln_sigmas_rS[ln_sigmas_rS$grp == "Residual", 2]
+        ln_logLkhood_rS     = logLik(ln_lmerFit_rS)
+        ln_AIC_rS           = AIC(ln_lmerFit_rS)
+        ln_BIC_rS           = BIC(ln_lmerFit_rS)
+        ln_DIC_rS           = getDIC(ln_lmerFit_rS)
+        ln_RMSE_rS          = sqrt(mean(residuals(ln_lmerFit_rS)^2))
+        ln_MAE_rS           = mean(abs(residuals(ln_lmerFit_rS)))
+        
+        TRUE
+      }, error = function(e) {
+        message("Random site model (rS) failed: ", conditionMessage(e))
+        FALSE
+      })
+    }
+    
+    #===========================================================================
+    # Random site/Season model (rSY): run only if siteID AND SeasonID are present
+    #===========================================================================
+    rSY_success <- FALSE
+    if (all(c("siteID", "SeasonID") %in% names(merged_data))) {
+      rSY_success <- tryCatch({
+        
+        lmerFit_rSY          = lmer(resi ~ -1 + (1|siteID/SeasonID), data = merged_data)
+        varcor_rSY           = VarCorr(lmerFit_rSY)
+        sigmas_rSY           = as.data.frame(varcor_rSY)[,c(1,5)]
+        sigma_site_rSY       = sigmas_rSY[sigmas_rSY$grp == "siteID", 2]
+        sigma_siteyr_rSY     = sigmas_rSY[sigmas_rSY$grp == "SeasonID:siteID", 2]
+        sigma_Resi_rSY       = sigmas_rSY[sigmas_rSY$grp == "Residual", 2]
+        logLkhood_rSY        = logLik(lmerFit_rSY)
+        AIC_rSY              = AIC(lmerFit_rSY)
+        BIC_rSY              = BIC(lmerFit_rSY)
+        DIC_rSY              = getDIC(lmerFit_rSY)
+        RMSE_rSY             = sqrt(mean(residuals(lmerFit_rSY)^2))
+        MAE_rSY              = mean(abs(residuals(lmerFit_rSY)))
+        
+        ln_lmerFit_rSY       = lmer(ln_resi ~ -1 + (1|siteID/SeasonID), data = merged_data)
+        ln_varcor_rSY        = VarCorr(ln_lmerFit_rSY)
+        ln_sigmas_rSY        = as.data.frame(ln_varcor_rSY)[,c(1,5)]
+        ln_sigma_site_rSY    = ln_sigmas_rSY[ln_sigmas_rSY$grp == "siteID", 2]
+        ln_sigma_siteyr_rSY  = ln_sigmas_rSY[ln_sigmas_rSY$grp == "SeasonID:siteID", 2]
+        ln_sigma_Resi_rSY    = ln_sigmas_rSY[ln_sigmas_rSY$grp == "Residual", 2]
+        ln_logLkhood_rSY     = logLik(ln_lmerFit_rSY)
+        ln_AIC_rSY           = AIC(ln_lmerFit_rSY)
+        ln_BIC_rSY           = BIC(ln_lmerFit_rSY)
+        ln_DIC_rSY           = getDIC(ln_lmerFit_rSY)
+        ln_RMSE_rSY          = sqrt(mean(residuals(ln_lmerFit_rSY)^2))
+        ln_MAE_rSY           = mean(abs(residuals(ln_lmerFit_rSY)))
+        
+        TRUE
+      }, error = function(e) {
+        message("Random site/season model (rSY) failed: ", conditionMessage(e))
+        FALSE
+      })
+    }
+    
     
     #===========================================================================
     Rslt <- data.frame("total_data_size"              = n1,
