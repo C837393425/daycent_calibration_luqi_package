@@ -1223,6 +1223,9 @@ combine_mod_mes_windows <- function(model_data, obs_data, var_config, window_typ
   if (var_config$model_output == "NH3.N") {
     model_col <- "mod_NH3"
     output_col <- "mod_NH3vol_gN_ha_day"
+  } else if (var_config$model_output == "DayCent_N2O")  {
+    model_col <- "mod_N2O"
+    output_col <- "mod_N2O_gN_ha_day"
   } else {
     model_col <- "mod_value"
     output_col <- paste0("mod_", gsub("\\.", "_", var_config$model_output), "_avg")
