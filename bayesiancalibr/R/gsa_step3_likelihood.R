@@ -602,8 +602,28 @@ calculate_variable_likelihood <- function(var_config, model_data, obs_data, task
   
   # Calculate residuals and log-transformed values
   combined_data$resi <- combined_data$obs - combined_data$mod
-  combined_data$ln_mod <- log(combined_data$mod + 1)
-  combined_data$ln_obs <- log(combined_data$obs + 1)
+  
+  # Observed N2O can be negative (net uptake), so shift values above zero before taking the log.
+  
+  if (var_config$model_output == "DayCent_N2O") {
+    
+    n2o_shift = min(c(combined_data$obs, combined_data$mod), na.rm = TRUE)
+    
+    if (n2o_shift <= 0) {
+      N2O_shift = abs(n2o_shift) + 1e-2
+    } else {
+      N2O_shift = 0
+    }
+    
+    combined_data$ln_mod <- log(combined_data$mod + N2O_shift)
+    combined_data$ln_obs <- log(combined_data$obs + N2O_shift)
+    
+  } else {
+  
+    combined_data$ln_mod <- log(combined_data$mod + 1)
+    combined_data$ln_obs <- log(combined_data$obs + 1)
+  }
+  
   combined_data$ln_resi <- combined_data$ln_obs - combined_data$ln_mod
   
   # Calculate goodness-of-fit statistics using existing function
