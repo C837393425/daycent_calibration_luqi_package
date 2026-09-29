@@ -17,6 +17,22 @@ prepare_parameter_set <- function(config, job_params, verbose = TRUE) {
   
   prior <- read.csv(prior_file, stringsAsFactors = FALSE)
   
+  # Add derived cRnon2o(3) and cRnon2o(4) rows if their source parameters are present
+  # (values come from job_params, computed in generate_mc_draws)
+  
+  if (all(c("cRnon2o(1)", "cRnon2o(2)") %in% prior$Parameter)) {
+    
+    new_rows <- prior[rep(1, 2), ]   # copy structure/column types from an existing row
+    new_rows[, ] <- NA
+    new_rows$File          <- "fix.100"
+    new_rows$Parameter     <- c("cRnon2o(3)", "cRnon2o(4)")
+    new_rows$ParameterName <- c("cRnon2o_3", "cRnon2o_4")
+    
+    prior <- rbind(prior, new_rows)
+    rownames(prior) <- NULL          # reset row numbers
+  }
+  
+  
   # Read default parameters if specified
   if ("default_params" %in% names(config$input_files)) {
     default_file <- config$input_files$default_params
