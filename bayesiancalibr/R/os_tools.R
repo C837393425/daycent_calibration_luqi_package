@@ -249,6 +249,14 @@ copy_dot100_files <- function(dot100_directory,
               to = file.path(simulation_directory, "outvars.txt"),
               overwrite = TRUE)
     
+    if (file.exists(file.path(dot100_directory, "sitepar.in")))  {
+      
+      file.copy(from = file.path(dot100_directory, "sitepar.in"),
+                to = file.path(simulation_directory, "sitepar.in"),
+                overwrite = TRUE)
+    }
+      
+      
     file.copy(from = file.path(dot100_directory, "outvars_names.txt"),
               to = file.path(simulation_directory, "outvars_names.txt"),
               overwrite = TRUE)
