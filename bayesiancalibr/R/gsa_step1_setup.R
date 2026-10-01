@@ -455,7 +455,6 @@ generate_mc_draws <- function(prior, nsim, nboot, rseed, smethod, verbose = TRUE
   # Derive cRnon2o_3 and cRnon2o_4 if their source parameters are present
   
   if (all(c("cRnon2o_1", "cRnon2o_2") %in% names(X))) {
-    set.seed(rseed + 1)
     min_non2o_ratio <- 0.285
     a <- X$cRnon2o_1
     b <- X$cRnon2o_2
