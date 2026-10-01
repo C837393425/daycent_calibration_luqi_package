@@ -1244,11 +1244,34 @@ combine_mod_mes_windows <- function(model_data, obs_data, var_config, window_typ
     start_date <- obs_data$meas_start_date[i]
     end_date <- obs_data$meas_end_date[i]
     
+    # Check whether the observed data carries the list of dates that were used in the average
+    if ("obs_dates" %in% names(obs_data)) {
+      
+      # Extract model data for this measurement window
+      temp_model_all <- model_data[model_data$TreatmentID == trt_id & 
+                                 model_data$mod_date >= start_date & 
+                                 model_data$mod_date <= end_date, ]
+      
+      # obs_dates[i] is ONE text string, e.g. "2005-06-01; 2005-06-02; ..."
+      # Split it on ";" and convert to Date so each date can be matched individually
+      obs_date_list <- unlist(strsplit(obs_data$obs_dates[i], ";"))   # split into separate strings
+      obs_date_list <- trimws(obs_date_list)                          # remove stray spaces
+      obs_date_list <- as.Date(obs_date_list, format = "%Y-%m-%d")    # convert text to Date
+      
+      obs_date_list <- obs_date_list[!is.na(obs_date_list)]           # drop blanks / NA
+      
+      # Keep only the model days that have an observation
+      temp_model <- temp_model_all[temp_model_all$mod_date %in% obs_date_list, ]
+      
+    } else {
+    
     # Extract model data for this measurement window
     temp_model <- model_data[model_data$TreatmentID == trt_id & 
                            model_data$mod_date >= start_date & 
                            model_data$mod_date <= end_date, ]
     
+    }
+  
     if (nrow(temp_model) > 0) {
       # Calculate average for the window
       combined_data[[output_col]][i] <- mean(temp_model[[model_col]], na.rm = TRUE)
