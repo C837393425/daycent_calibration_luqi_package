@@ -43,8 +43,11 @@ annual_avg <- daily_df %>%
   group_by(siteID_dc, treatment_schedule, Meas_StartDate, Meas_EndDate) %>%  # define grouping columns
   summarise(
     N2O_gN_ha_day = mean(measN2O_gN_ha_day, na.rm = TRUE),  # average N2O, ignoring NAs
-    n_obs = n(),                                                     # count of daily records in each group (optional, useful for QC)
-    .groups = "drop"                                                 # drop grouping after summarise to avoid warnings
+    obs_dates  = paste(
+      format(sort(unique(Date[!is.na(measN2O_gN_ha_day)])), "%Y-%m-%d"),
+      collapse = "; "
+    ),  
+     .groups = "drop"                                                 # drop grouping after summarise to avoid warnings
   )  %>%
   mutate(
     meas_start_year = year(Meas_StartDate),                          # year of measurement start
@@ -62,3 +65,31 @@ write.csv(
   file = "cumN2O_annual_avg_calibration.csv",  # output file name
   row.names = FALSE                             # exclude row numbers from the output
 )
+
+
+
+
+
+
+
+
+#############################
+# Save daily observation data
+#############################
+
+
+# Load annual grouped obseved data
+daily_df <- readRDS("N:/Research/Ogle/LandCraft/landcraft_model_calibration_new_obs/N2O_Measurements/df_mp_seasonal.rds") %>%
+  mutate(runfile_id = as.character(runfile_id)) %>%
+  rename(siteID = siteID_dc, year = meas_year)
+
+
+# Save daily to a CSV file
+write.csv(
+  daily_df,
+  file = "daily_N2O_calibration.csv",  # output file name
+  row.names = FALSE                             # exclude row numbers from the output
+)
+
+
+
