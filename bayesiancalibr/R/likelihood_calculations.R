@@ -51,6 +51,21 @@ calculate_gofs <- function(merged_data){
   #===========================================================================
   # Calculate Goodness-of-fit for evaluation dataset
   result <- tryCatch({
+    
+    
+    # If rSite is present in merged_data, replace siteID with rSite
+    # We will use rsite as random factor instead of siteID
+    
+    if ("rSite" %in% names(merged_data)) {
+      
+      # Drop the original siteID column (no error if it doesn't exist)
+      merged_data$siteID <- NULL
+      
+      # Rename rSite to siteID
+      names(merged_data)[names(merged_data) == "rSite"] <- "siteID"
+    }
+    
+    
     n1 = nrow(merged_data)
     
     merged_data = merged_data[!is.na(merged_data$ln_resi), ]
